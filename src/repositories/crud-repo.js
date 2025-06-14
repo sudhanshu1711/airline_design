@@ -1,4 +1,6 @@
+const { StatusCodes } = require('http-status-codes')
 const {logger} =require('../config/index.js')
+const AppError = require('../utils/errors/app-error.js')
 class crudRepo {
     constructor(model){
         this.model=model
@@ -8,48 +10,39 @@ class crudRepo {
             return response
     }
      async destroy(data){
-        try {
             const response = await this.model.destroy({
                 where:{
                     id:data
                 }
             })
+             if(!response){
+                throw new AppError("Not able to find the resource",StatusCodes.NOT_FOUND)
+            }
             return response
-        } catch (error) {
-                     logger.error('something went wrong while destroying')
-                     throw error
-        }
     }
      async get(data){
-        try {
             const response = await this.model.findByPk(data)
+            if(!response){
+                throw new AppError("Not able to find the resource",StatusCodes.NOT_FOUND)
+            }
             return response
-        } catch (error) {
-                     logger.error('something went wrong while fetching')
-                     throw error
-        }
     }
-     async getAll(data){
-        try {
+     async getAll(){
             const response = await this.model.findAll()
             return response
-        } catch (error) {
-                     logger.error('something went wrong while fetching')
-                     throw error
-        }
     }
-     async update(id,data){
-        try {
-            const response = await this.model.update(data,{
-                where:{
-                    id:id
-                }
-            })
-            return response
-        } catch (error) {
-                     logger.error('something went wrong while updating')
-                     throw error
+    async update(id, data) {
+          const [updated] = await this.model.update(data, {
+              where: { id: id }
+      });
+
+      if (updated === 0) {
+        throw new AppError("Airplane not found", StatusCodes.NOT_FOUND);
         }
-    }
+
+      const updatedAirplane = await this.model.findByPk(id);
+      return updatedAirplane;
+}
+
 }
 module.exports = crudRepo
